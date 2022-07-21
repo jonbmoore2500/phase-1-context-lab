@@ -35,8 +35,6 @@ const testObj = {
 }
 
 function createEmployeeRecord(emplArr) {
-    // creates a record object for a new employee, assigns identifying info and 
-    // sets up empty arrays for time in and time out events
     return {
     firstName: emplArr[0],
     familyName: emplArr[1],
@@ -51,46 +49,73 @@ function createEmployeeRecords(arrOfEmpArrs) {
     return arrOfEmpArrs.map(arr => createEmployeeRecord(arr))
 }
 
-function createTimeInEvent(dateStamp) {
-    let timeInObj = {
-        type: 'TimeIn',
-        hour: parseInt(dateStamp.slice(-4)),
-        date: dateStamp.slice(0, 10)
-        }
-    this.timeInEvents.push(timeInObj)
+// function createTimeInEvent(dateStamp) {
+//     let timeInObj = {
+//         type: 'TimeIn',
+//         hour: parseInt(dateStamp.slice(-4)),
+//         date: dateStamp.slice(0, 10)
+//         }
+//     this.timeInEvents.push(timeInObj)
+//     return this
+// }
+let createTimeInEvent = function(dateStamp){
+    let [date, hour] = dateStamp.split(' ')
+
+    this.timeInEvents.push({
+        type: "TimeIn",
+        hour: parseInt(hour, 10),
+        date,
+    })
+
     return this
 }
-function createTimeOutEvent(dateStamp) {
-    let timeOutObj = {
-        type: 'TimeOut',
-        hour: parseInt(dateStamp.slice(-4)),
-        date: dateStamp.slice(0, 10)
-        }
-    this.timeOutEvents.push(timeOutObj)
+// function createTimeOutEvent(dateStamp) {
+//     let timeOutObj = {
+//         type: 'TimeOut',
+//         hour: parseInt(dateStamp.slice(-4)),
+//         date: dateStamp.slice(0, 10)
+//         }
+//     this.timeOutEvents.push(timeOutObj)
+//     return this
+// }
+let createTimeOutEvent = function(dateStamp){
+    let [date, hour] = dateStamp.split(' ')
+
+    this.timeOutEvents.push({
+        type: "TimeOut",
+        hour: parseInt(hour, 10),
+        date,
+    })
+
     return this
 }
 
+
 function hoursWorkedOnDate(dateStamp) {
-    let timeIn
-    let timeOut
+    let totalTime = 0
+    //doesn't properly handle multiple requests on same day?
     
     for (let eventId = 0; eventId < this.timeInEvents.length; eventId++) {
         if (this.timeInEvents[eventId].date === dateStamp) {
-            timeIn = parseInt(this.timeInEvents[eventId].hour)/100
+            const timeIn = parseInt(this.timeInEvents[eventId].hour)/100
+            const timeOut = parseInt(this.timeOutEvents[eventId].hour)/100
+            totalTime += timeOut-timeIn
         }
-        if (this.timeInEvents[eventId].date === dateStamp) {
-            timeOut = parseInt(this.timeOutEvents[eventId].hour)/100
-        }
+        // if (this.timeOutEvents[eventId].date === dateStamp) {
+        //     timeOut = parseInt(this.timeOutEvents[eventId].hour)/100
+        // }
     }
-    return timeOut-timeIn
+    //this.timeInEvents
+    return totalTime
 }
+
 
 function wagesEarnedOnDate(dateStamp) {
     let hoursWorked = hoursWorkedOnDate.call(this, dateStamp)
     //console.log(hoursWorked)
     let payRate = this.payPerHour
     // console.log(payRate)
-    // console.log(hoursWorked*payRate)
+    console.log(hoursWorked*payRate, this.firstName)
     return hoursWorked*payRate
 }
 
@@ -102,10 +127,11 @@ function findEmployeeByFirstName(collection, firstNameString) {
     }
 }
 
-function calculatePayroll(empRecordsArr) {
-    let totalPayPerEmpArr = empRecordsArr.map(empObj => allWagesFor.apply(empObj))
-    return totalPayPerEmpArr.reduce((previous, current) => {
-        return previous + current
+let calculatePayroll = function(empRecordsArr) {
+    //let totalPayPerEmpArr = empRecordsArr.map(empObj => allWagesFor.apply(empObj))
+    //console.log(empRecordsArr)
+    return empRecordsArr.reduce((previous, current) => {
+        return previous + allWagesFor.call(current)
     }, 0)
 }
 
@@ -128,8 +154,8 @@ const allWagesFor = function () {
         return e.date
     })
 
-    const payable = eligibleDates.reduce(function (memo, d) {
-        return memo + wagesEarnedOnDate.call(this, d)
+    const payable = [...new Set(eligibleDates)].reduce(function (memo, date) {
+        return memo + wagesEarnedOnDate.call(this, date)
     }.bind(this), 0) // <== Hm, why did we need to add bind() there? We'll discuss soon!
 
     return payable
